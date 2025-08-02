@@ -392,7 +392,7 @@ class AutoF5Content {
     try {
       const response = await chrome.runtime.sendMessage({ type: "getStatus" });
       if (response && response.refreshCount !== undefined) {
-        this.updatePopupStats(response.refreshCount, response.totalTime);
+        this.updatePopupStats(response.refreshCount, response.totalTime); // Update stats ngay khi load (đồng bộ sau reload)
 
         // Hiển thị popup nếu timer đang chạy
         if (response.isRunning) {
