@@ -15,7 +15,7 @@ Extension này được thiết kế đặc biệt cho sinh viên FPT để:
 - Chỉ hoạt động trên domain FPT Education để tránh can thiệp các trang khác
 
 ## 🌟 Tính năng
-
+  
 - ⏰ **Đếm ngược tùy chỉnh**: Cài đặt thời gian từ 5 giây đến 1 giờ
 - 🔄 **Tự động refresh thông minh**: Chỉ refresh khi cần thiết
 - 🎯 **Chỉ hoạt động trên FPT**: Extension chỉ chạy trên trang điểm FPT Education
@@ -23,6 +23,7 @@ Extension này được thiết kế đặc biệt cho sinh viên FPT để:
   - ✅ Tự động phát hiện "Passed" (màu xanh) và dừng ngay lập tức
   - ❌ Tự động phát hiện "Not Passed" (màu đỏ) và tiếp tục kiểm tra
   - 🔍 Kiểm tra liên tục mỗi 2 giây kể cả khi không refresh
+  - 🔊 **Phát âm thanh thông báo** khi phát hiện "Passed"
 - 📊 **Thống kê chi tiết**:
   - Đếm số lần đã F5
   - Tổng thời gian đã chạy
@@ -176,4 +177,5 @@ Nếu gặp vấn đề, hãy tạo issue trên GitHub hoặc liên hệ trực 
 ---
 
 ⭐ **Đừng quên star nếu thấy hữu ích!** ⭐
+
 
