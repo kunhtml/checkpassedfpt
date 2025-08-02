@@ -11,16 +11,11 @@ class AutoF5Content {
     if (!this.isTargetURL()) {
       console.log("Tự Động Check Passed FPT: Trang này không được hỗ trợ");
       return;
-    }
-
-    // Lắng nghe messages từ background script
+    } // Lắng nghe messages từ background script
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       this.handleMessage(message, sender, sendResponse);
       return true;
     });
-
-    // Thêm visual indicator khi timer đang chạy
-    this.createTimerIndicator();
 
     // Thêm popup ở góc phải dưới
     this.createBottomRightPopup();
@@ -39,7 +34,6 @@ class AutoF5Content {
   handleMessage(message, sender, sendResponse) {
     switch (message.type) {
       case "timerUpdate":
-        this.updateTimerIndicator(message.timeLeft, message.isRunning);
         this.updateBottomRightPopup(message.timeLeft, message.isRunning);
         // Cập nhật thống kê nếu có
         if (
@@ -47,15 +41,12 @@ class AutoF5Content {
           message.totalTime !== undefined
         ) {
           this.updatePopupStats(message.refreshCount, message.totalTime);
-          this.updateIndicatorStats(message.refreshCount);
         }
         break;
-
       case "pageRefresh":
         this.handlePageRefresh();
         break;
       case "refreshHappened":
-        this.updateIndicatorStats(message.refreshCount);
         this.updatePopupStats(message.refreshCount, message.totalTime);
         break;
 
@@ -91,8 +82,6 @@ class AutoF5Content {
       user-select: none;
     `;
 
-    indicator.innerHTML = "🔄 FPT Check: 30s";
-
     // Thêm click handler để toggle visibility
     indicator.addEventListener("click", () => {
       indicator.style.opacity = indicator.style.opacity === "0.3" ? "1" : "0.3";
@@ -107,7 +96,6 @@ class AutoF5Content {
 
     if (isRunning) {
       indicator.style.display = "block";
-      indicator.innerHTML = `🔄 FPT Check: ${timeLeft}s`;
 
       // Thay đổi màu khi gần hết thời gian
       if (timeLeft <= 5) {
@@ -159,8 +147,6 @@ class AutoF5Content {
       text-align: center;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     `;
-
-    toast.innerHTML = "🔄 FPT Check: Đang refresh trang...";
 
     document.body.appendChild(toast);
 
@@ -682,7 +668,7 @@ class AutoF5Content {
       if (statusText.includes("PASSED")) {
         pageStatusEl.style.color = "#4CAF50";
       } else if (statusText.includes("Not Passed")) {
-        pageStatusEl.style.color = "#ff6b6b";
+        pageStatusEl.style.color = "#fff";
       } else {
         pageStatusEl.style.color = "#fff";
       }
