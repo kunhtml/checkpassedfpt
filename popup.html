@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        width: 300px;
+        padding: 20px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin: 0;
+      }
+
+      .container {
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0 0 20px 0;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .timer-display {
+        font-size: 48px;
+        font-weight: bold;
+        margin: 20px 0;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .controls {
+        margin: 20px 0;
+      }
+
+      button {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 10px 15px;
+        margin: 5px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .settings {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .input-group {
+        margin: 10px 0;
+        text-align: left;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+      }
+
+      input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+
+      input[type="number"]::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .status {
+        margin: 10px 0;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+
+      .active {
+        color: #4caf50;
+        font-weight: bold;
+      }
+      .inactive {
+        color: #f44336;
+      }
+
+      .stats {
+        margin: 15px 0;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        margin: 5px 0;
+        font-size: 12px;
+      }
+
+      .stat-label {
+        opacity: 0.8;
+      }
+
+      .stat-value {
+        font-weight: bold;
+        color: #4caf50;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>✔️ Tự Động Check Passed FPT</h1>
+
+      <div class="timer-display" id="timerDisplay">30</div>
+
+      <div class="status" id="status">Chưa bắt đầu</div>
+
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-label">📊 Số lần F5:</span>
+          <span class="stat-value" id="refreshCount">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">⏱️ Tổng thời gian:</span>
+          <span class="stat-value" id="totalTime">0s</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="startBtn">▶️ Bắt đầu</button>
+        <button id="stopBtn" disabled>⏸️ Dừng</button>
+        <button id="resetBtn">🔄 Reset</button>
+        <button id="resetStatsBtn">📊 Reset Stats</button>
+      </div>
+
+      <div class="settings">
+        <div class="input-group">
+          <label for="timeInput">Thời gian đếm ngược (giây):</label>
+          <input
+            type="number"
+            id="timeInput"
+            min="5"
+            max="3600"
+            value="30"
+            placeholder="Nhập số giây..."
+          />
+        </div>
+        <button id="setTimeBtn">⚙️ Cài đặt thời gian</button>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
