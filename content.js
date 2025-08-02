@@ -626,14 +626,8 @@ class AutoF5Content {
   }
   async handleNotPassedStatus() {
     try {
-      // Chỉ hiển thị thông báo, KHÔNG tự động bắt đầu timer
-      this.showStatusNotification(
-        "❌ Not Passed - Hãy click 'Bắt đầu' để check tự động",
-        "warning"
-      );
-
-      // Cập nhật popup
-      this.updatePopupStatus("❌ Not Passed - Chờ người dùng bắt đầu");
+      // Chỉ cập nhật trạng thái popup, KHÔNG hiển thị thông báo
+      this.updatePopupStatus("❌ Not Passed - Tiếp Tục Chạy");
     } catch (error) {
       console.error("Lỗi khi xử lý trạng thái Not Passed:", error);
     }

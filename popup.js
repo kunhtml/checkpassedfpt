@@ -189,7 +189,8 @@ class AutoF5Popup {
   updateDisplay() {
     this.timerDisplay.textContent = this.currentTime;
     this.updateButtonStates();
-    this.updateStatsDisplay();    if (!this.isRunning) {
+    this.updateStatsDisplay();
+    if (!this.isRunning) {
       this.updateStatus("inactive", "Nhấn 'Bắt đầu' để check tự động");
     }
   }
