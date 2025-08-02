@@ -10,10 +10,13 @@ class AutoF5Popup {
     this.resetStatsBtn = document.getElementById("resetStatsBtn");
     this.timeInput = document.getElementById("timeInput");
     this.setTimeBtn = document.getElementById("setTimeBtn");
+    this.soundDurationInput = document.getElementById("soundDurationInput");
+    this.setSoundBtn = document.getElementById("setSoundBtn");
     this.refreshCount = document.getElementById("refreshCount");
     this.totalTime = document.getElementById("totalTime");
 
     this.currentTime = 30;
+    this.soundDuration = 30; // Thời gian phát âm thanh mặc định
     this.isRunning = false;
     this.refreshCountValue = 0;
     this.totalTimeValue = 0;
@@ -29,6 +32,7 @@ class AutoF5Popup {
     this.resetBtn.addEventListener("click", () => this.resetTimer());
     this.resetStatsBtn.addEventListener("click", () => this.resetStats());
     this.setTimeBtn.addEventListener("click", () => this.setTime());
+    this.setSoundBtn.addEventListener("click", () => this.setSoundDuration());
 
     // Lắng nghe thay đổi từ background script
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -48,11 +52,17 @@ class AutoF5Popup {
         "timeLeft",
         "refreshCount",
         "totalTime",
+        "soundDuration", // Load sound duration
       ]);
 
       if (result.countdownTime) {
         this.currentTime = result.countdownTime;
         this.timeInput.value = result.countdownTime;
+      }
+
+      if (result.soundDuration) {
+        this.soundDuration = result.soundDuration;
+        this.soundDurationInput.value = result.soundDuration;
       }
 
       if (result.isRunning !== undefined) {
@@ -107,7 +117,6 @@ class AutoF5Popup {
       console.error("Lỗi khi reset timer:", error);
     }
   }
-
   async setTime() {
     const newTime = parseInt(this.timeInput.value);
 
@@ -128,6 +137,28 @@ class AutoF5Popup {
       this.updateStatus("", `⚙️ Đã cài đặt: ${newTime} giây`);
     } catch (error) {
       console.error("Lỗi khi cài đặt thời gian:", error);
+    }
+  }
+
+  async setSoundDuration() {
+    const newDuration = parseInt(this.soundDurationInput.value);
+
+    if (isNaN(newDuration) || newDuration < 5 || newDuration > 300) {
+      alert("Vui lòng nhập thời gian âm thanh từ 5 đến 300 giây!");
+      return;
+    }
+
+    try {
+      this.soundDuration = newDuration;
+      await chrome.storage.local.set({ soundDuration: newDuration });
+      await chrome.runtime.sendMessage({
+        type: "setSoundDuration",
+        duration: newDuration,
+      });
+
+      this.updateStatus("", `🔊 Đã cài đặt âm thanh: ${newDuration} giây`);
+    } catch (error) {
+      console.error("Lỗi khi cài đặt âm thanh:", error);
     }
   }
 
