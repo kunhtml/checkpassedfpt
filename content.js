@@ -4,7 +4,7 @@ class AutoF5Content {
   constructor() {
     this.isPageRefreshing = false;
     this.statusChecker = null;
-    this.lastStatus = null; // Thêm biến cờ để kiểm soát thông báo
+    this.lastStatus = null; // Để tránh spam thông báo
     this.initializeContentScript();
   }
 
@@ -190,7 +190,7 @@ class AutoF5Content {
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
             <span style="opacity: 0.8;">Trạng thái:</span>
-            <span id="popupPageStatus" style="font-weight: bold; font-size: 11px;">Đang kiểm tra...</span>
+            <span id="popupPageStatus" style="font-weight: bold; font-size: 11px;">Chưa bắt đầu</span>
           </div>
           <div style="text-align: center; font-size: 10px; opacity: 0.6; font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
           </div>
@@ -219,6 +219,22 @@ class AutoF5Content {
     });
 
     document.body.appendChild(popup);
+  }
+
+  // Hàm reset popup về trạng thái ban đầu
+  resetPopupToInitial() {
+    const popup = document.getElementById("autoF5BottomPopup");
+    if (!popup) return;
+    popup.style.display = "block";
+    const timerEl = popup.querySelector("#popupTimer");
+    const statusEl = popup.querySelector("#popupStatus");
+    const pageStatusEl = popup.querySelector("#popupPageStatus");
+    if (timerEl) timerEl.textContent = "30";
+    if (statusEl) statusEl.textContent = "Click 'Bắt đầu' để check tự động";
+    if (pageStatusEl) pageStatusEl.textContent = "Chưa bắt đầu";
+    popup.style.background =
+      "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    popup.style.animation = "none";
   }
 
   updateBottomRightPopup(timeLeft, isRunning) {
@@ -250,10 +266,7 @@ class AutoF5Content {
         statusEl.textContent = `⏰ Còn lại ${timeLeft} giây`;
       }
     } else {
-      statusEl.textContent = "⏸️ Đã dừng";
-      popup.style.animation = "none";
-      popup.style.background =
-        "linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%)";
+      this.resetPopupToInitial();
     }
   }
 
@@ -482,8 +495,13 @@ class AutoF5Content {
       const response = await chrome.runtime.sendMessage({ type: "getStatus" });
       if (response && response.refreshCount !== undefined) {
         this.updatePopupStats(response.refreshCount, response.totalTime);
+
+        // Hiển thị popup nếu timer đang chạy
         if (response.isRunning) {
           this.updateBottomRightPopup(response.timeLeft, response.isRunning);
+        } else {
+          // Nếu timer không chạy, reset popup về trạng thái ban đầu
+          this.resetPopupToInitial();
         }
       }
     } catch (error) {
@@ -514,6 +532,8 @@ class AutoF5Content {
 
       const response = await chrome.runtime.sendMessage({ type: "getStatus" });
       if (!response || !response.isRunning) {
+        // Nếu timer không chạy, reset popup về trạng thái ban đầu
+        this.resetPopupToInitial();
         return;
       }
 

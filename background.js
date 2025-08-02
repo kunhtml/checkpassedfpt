@@ -3,29 +3,25 @@
 class AutoF5Background {
   constructor() {
     this.timerId = null;
-    this.countdownTime = 30; // Thời gian mặc định
+    this.countdownTime = 30;
     this.timeLeft = 30;
     this.isRunning = false;
     this.tabId = null;
-    this.activeTabId = null; // Tab được chỉ định để chạy tự động check passed FPT
-    this.refreshCount = 0; // Số lần đã F5
-    this.totalTime = 0; // Tổng thời gian chạy (giây)
-    this.sessionStartTime = null; // Thời điểm bắt đầu session
-    this.soundDuration = 30; // Thời gian phát âm thanh mặc định (giây)
+    this.activeTabId = null;
+    this.refreshCount = 0;
+    this.totalTime = 0;
+    this.sessionStartTime = null;
+    this.soundDuration = 30;
 
     this.initializeExtension();
   }
   initializeExtension() {
-    // Lắng nghe messages từ popup
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       this.handleMessage(message, sender, sendResponse);
-      return true; // Để có thể sendResponse async
+      return true;
     });
 
-    // Load settings khi khởi động
     this.loadSettings();
-
-    // Cập nhật badge icon
     this.updateBadge();
   }
   async loadSettings() {
@@ -37,34 +33,32 @@ class AutoF5Background {
         "refreshCount",
         "totalTime",
         "activeTabId",
-        "tabId", // Load tab ID
-        "soundDuration", // Load sound duration
+        "tabId",
+        "soundDuration",
       ]);
 
       if (result.countdownTime) {
         this.countdownTime = result.countdownTime;
         this.timeLeft = result.timeLeft || result.countdownTime;
       }
-
-      // Load statistics
       this.refreshCount = result.refreshCount || 0;
-      this.totalTime = result.totalTime || 0; // Load active tab ID
+      this.totalTime = result.totalTime || 0;
       this.activeTabId = result.activeTabId || null;
+      if (result.tabId) this.tabId = result.tabId;
+      if (result.soundDuration) this.soundDuration = result.soundDuration;
 
-      // Load tab ID if exists
-      if (result.tabId) {
-        this.tabId = result.tabId;
-        console.log("Đã khôi phục tab ID:", this.tabId);
+      // KHÔNG reset isRunning về false!
+      if (typeof result.isRunning === "boolean") {
+        this.isRunning = result.isRunning;
       }
 
-      // Load sound duration
-      if (result.soundDuration) {
-        this.soundDuration = result.soundDuration;
-        console.log("Đã khôi phục sound duration:", this.soundDuration);
+      // Nếu isRunning true, tự động start lại interval
+      if (this.isRunning && !this.timerId) {
+        this.timerId = setInterval(() => {
+          this.tick();
+        }, 1000);
       }
 
-      // Không tự động khôi phục timer khi restart extension để tránh lỗi
-      this.isRunning = false;
       await this.saveState();
     } catch (error) {
       console.error("Lỗi khi load settings:", error);
@@ -78,12 +72,10 @@ class AutoF5Background {
           await this.startTimer();
           sendResponse({ success: true });
           break;
-
         case "stopTimer":
           await this.stopTimer();
           sendResponse({ success: true });
           break;
-
         case "resetTimer":
           await this.resetTimer();
           sendResponse({ success: true });
@@ -92,7 +84,6 @@ class AutoF5Background {
           await this.setTime(message.time);
           sendResponse({ success: true });
           break;
-
         case "setSoundDuration":
           await this.setSoundDuration(message.duration);
           sendResponse({ success: true });
@@ -110,12 +101,10 @@ class AutoF5Background {
           await this.resetStats();
           sendResponse({ success: true });
           break;
-
         case "passedDetected":
           await this.handlePassedDetected();
           sendResponse({ success: true });
           break;
-
         default:
           sendResponse({ success: false, error: "Unknown message type" });
       }
@@ -127,16 +116,12 @@ class AutoF5Background {
   async startTimer() {
     if (this.isRunning) return;
 
-    // Lấy tab hiện tại và kiểm tra URL
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tabs.length > 0) {
-      // Kiểm tra URL trước khi bắt đầu
       if (!this.isValidURL(tabs[0].url)) {
         console.log("Extension chỉ hoạt động trên trang FPT Grade!");
         return;
       }
-
-      // Lưu lại tab ID của trang FPT Grade
       this.tabId = tabs[0].id;
       console.log(
         "Đã lưu tab FPT Grade với ID:",
@@ -151,8 +136,9 @@ class AutoF5Background {
 
     this.isRunning = true;
     this.timeLeft = this.countdownTime;
-    this.sessionStartTime = Date.now(); // Bắt đầu đếm thời gian session
+    this.sessionStartTime = Date.now();
 
+    if (this.timerId) clearInterval(this.timerId);
     this.timerId = setInterval(() => {
       this.tick();
     }, 1000);
@@ -166,7 +152,6 @@ class AutoF5Background {
   async stopTimer() {
     if (!this.isRunning) return;
 
-    // Cập nhật tổng thời gian chạy
     if (this.sessionStartTime) {
       const sessionDuration = Math.floor(
         (Date.now() - this.sessionStartTime) / 1000
@@ -221,7 +206,7 @@ class AutoF5Background {
 
     if (this.timeLeft <= 0) {
       await this.refreshPage();
-      this.timeLeft = this.countdownTime; // Reset cho chu kỳ tiếp theo
+      this.timeLeft = this.countdownTime;
     }
 
     await this.saveState();
@@ -231,35 +216,23 @@ class AutoF5Background {
   async refreshPage() {
     try {
       if (this.tabId) {
-        // Kiểm tra xem tab còn tồn tại và có đúng URL không
         try {
           const tab = await chrome.tabs.get(this.tabId);
-
-          // Kiểm tra URL để đảm bảo đây là tab FPT Grade
           if (!this.isValidURL(tab.url)) {
             console.log("Tab không phải FPT Grade, dừng auto refresh");
             await this.stopTimer();
             return;
           }
-
-          // Refresh tab
           await chrome.tabs.reload(this.tabId);
-
-          // Tăng số lần F5
           this.refreshCount++;
           await this.saveState();
-
           console.log(
             "Đã refresh trang FPT Grade, tab ID:",
             this.tabId,
             "- Lần thứ:",
             this.refreshCount
           );
-
-          // Hiển thị notification
           await this.showNotification();
-
-          // Thông báo về việc refresh đến popup và content script
           this.notifyRefresh();
         } catch (tabError) {
           console.error(
@@ -296,7 +269,7 @@ class AutoF5Background {
         iconUrl: "icons/icon48.png",
         title: "🎉 PASSED - Tự Động Check Passed FPT",
         message: "Chúc mừng! Điểm đã PASSED. Timer đã tự động dừng.",
-        requireInteraction: true, // Notification không tự động biến mất
+        requireInteraction: true,
       });
     } catch (error) {
       console.error("Lỗi khi hiển thị notification PASSED:", error);
@@ -304,13 +277,8 @@ class AutoF5Background {
   }
   async handlePassedDetected() {
     try {
-      // Dừng timer
       await this.stopTimer();
-
-      // Hiển thị notification đặc biệt cho PASSED
       await this.showPassedNotification();
-
-      // Gửi thông tin sound duration đến content script để phát âm thanh
       if (this.tabId) {
         try {
           await chrome.tabs.sendMessage(this.tabId, {
@@ -321,7 +289,6 @@ class AutoF5Background {
           console.error("Lỗi khi gửi message phát âm thanh:", error);
         }
       }
-
       console.log(
         "🎉 PASSED detected! Timer đã dừng và notification đã được gửi."
       );
@@ -337,15 +304,14 @@ class AutoF5Background {
         isRunning: this.isRunning,
         refreshCount: this.refreshCount,
         totalTime: this.totalTime,
-        tabId: this.tabId, // Lưu tab ID
-        soundDuration: this.soundDuration, // Lưu sound duration
+        tabId: this.tabId,
+        soundDuration: this.soundDuration,
       });
     } catch (error) {
       console.error("Lỗi khi lưu state:", error);
     }
   }
   notifyPopup() {
-    // Gửi update đến popup nếu có
     chrome.runtime
       .sendMessage({
         type: "timerUpdate",
@@ -353,11 +319,7 @@ class AutoF5Background {
         isRunning: this.isRunning,
         countdownTime: this.countdownTime,
       })
-      .catch(() => {
-        // Popup có thể không mở, bỏ qua lỗi
-      });
-
-    // Gửi update đến content script
+      .catch(() => {});
     this.notifyContentScript();
   }
   async notifyContentScript() {
@@ -372,48 +334,32 @@ class AutoF5Background {
           totalTime: this.totalTime,
         });
       }
-    } catch (error) {
-      // Content script có thể chưa load, bỏ qua lỗi
-    }
+    } catch (error) {}
   }
   async resetStats() {
     this.refreshCount = 0;
     this.totalTime = 0;
     await this.saveState();
-
-    // Thông báo về việc reset stats đến popup
     chrome.runtime
       .sendMessage({
         type: "refreshHappened",
         refreshCount: this.refreshCount,
         totalTime: this.totalTime,
       })
-      .catch(() => {
-        // Popup có thể không mở, bỏ qua lỗi
-      });
-
-    // Thông báo đến content script
+      .catch(() => {});
     this.notifyContentScriptStats();
-
     console.log("Đã reset thống kê");
   }
-
   notifyRefresh() {
-    // Thông báo về việc refresh đến popup
     chrome.runtime
       .sendMessage({
         type: "refreshHappened",
         refreshCount: this.refreshCount,
         totalTime: this.totalTime,
       })
-      .catch(() => {
-        // Popup có thể không mở, bỏ qua lỗi
-      });
-
-    // Thông báo đến content script
+      .catch(() => {});
     this.notifyContentScriptStats();
   }
-
   async notifyContentScriptStats() {
     try {
       if (this.tabId) {
@@ -423,24 +369,18 @@ class AutoF5Background {
           totalTime: this.totalTime,
         });
       }
-    } catch (error) {
-      // Content script có thể chưa load, bỏ qua lỗi
-    }
+    } catch (error) {}
   }
   updateBadge() {
     const badgeText = this.isRunning ? this.timeLeft.toString() : "";
     const badgeColor = this.isRunning ? "#4CAF50" : "#f44336";
-
     chrome.action.setBadgeText({ text: badgeText });
     chrome.action.setBadgeBackgroundColor({ color: badgeColor });
   }
-
   isValidURL(url) {
-    // Chỉ hoạt động trên trang FPT Grade
     const targetURL = "https://fap.fpt.edu.vn/Grade/StudentGrade.aspx";
     return url && url.startsWith(targetURL);
   }
 }
 
-// Khởi tạo background service
 const autoF5 = new AutoF5Background();
