@@ -42,8 +42,13 @@ Extension này được thiết kế đặc biệt cho sinh viên FPT để:
 1. **Tải source code**:
 
    ```bash
-   git clone [repo-url]
-   cd tu-dong-check-passed-fpt
+   click vào nút Code màu xanh
+   chọn Download Zip
+   sau khi tải về
+   click mở zip
+   nếu dùng Winrar thì click vào Wizard
+   rồi nó sẽ hiện ra 1 folder chứa code extension
+   
    ```
 
 2. **Mở Chrome Extensions**:
@@ -53,18 +58,7 @@ Extension này được thiết kế đặc biệt cho sinh viên FPT để:
 
 3. **Load extension**:
    - Click "Load unpacked"
-   - Chọn thư mục chứa extension này
-
-### Cách 2: Tạo icon (tuỳ chọn)
-
-Bạn cần tạo các file icon PNG với kích thước:
-
-- `icons/icon16.png` (16x16px)
-- `icons/icon32.png` (32x32px)
-- `icons/icon48.png` (48x48px)
-- `icons/icon128.png` (128x128px)
-
-Hoặc có thể sử dụng icon emoji tạm thời.
+   - Chọn thư mục chứa code extension nãy giải nén
 
 ## 📱 Cách sử dụng
 
@@ -78,8 +72,7 @@ Hoặc có thể sử dụng icon emoji tạm thời.
 
 3. **Điều khiển timer**:
    - **▶️ Bắt đầu**: Khởi động đếm ngược
-   - **⏸️ Dừng**: Tạm dừng timer
-   - **🔄 Reset**: Đặt lại về thời gian ban đầu
+   - **⏸️ STOP**: Dừng chạy
    - **📊 Reset Stats**: Đặt lại thống kê về 0
 
 ### Các chức năng
@@ -177,5 +170,6 @@ Nếu gặp vấn đề, hãy tạo issue trên GitHub hoặc liên hệ trực 
 ---
 
 ⭐ **Đừng quên star nếu thấy hữu ích!** ⭐
+
 
 
