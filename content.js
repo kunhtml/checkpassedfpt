@@ -4,26 +4,23 @@ class AutoF5Content {
   constructor() {
     this.isPageRefreshing = false;
     this.statusChecker = null;
+    this.lastStatus = null; // Thêm biến cờ để kiểm soát thông báo
     this.initializeContentScript();
   }
+
   initializeContentScript() {
-    // Kiểm tra URL trước khi khởi tạo
     if (!this.isTargetURL()) {
       console.log("Tự Động Check Passed FPT: Trang này không được hỗ trợ");
       return;
-    } // Lắng nghe messages từ background script
+    }
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       this.handleMessage(message, sender, sendResponse);
       return true;
     });
 
-    // Thêm popup ở góc phải dưới
     this.createBottomRightPopup();
-
-    // Load thống kê ban đầu
     this.loadInitialStats();
-
-    // Bắt đầu kiểm tra trạng thái trang
     this.startStatusChecking();
 
     console.log(
@@ -31,11 +28,11 @@ class AutoF5Content {
       window.location.href
     );
   }
+
   handleMessage(message, sender, sendResponse) {
     switch (message.type) {
       case "timerUpdate":
         this.updateBottomRightPopup(message.timeLeft, message.isRunning);
-        // Cập nhật thống kê nếu có
         if (
           message.refreshCount !== undefined &&
           message.totalTime !== undefined
@@ -49,18 +46,15 @@ class AutoF5Content {
       case "refreshHappened":
         this.updatePopupStats(message.refreshCount, message.totalTime);
         break;
-
       case "playPassedSound":
         this.playPassedSoundWithDuration(message.duration);
         break;
-
       default:
         break;
     }
   }
 
   createTimerIndicator() {
-    // Tạo indicator hiển thị ở góc màn hình
     const indicator = document.createElement("div");
     indicator.id = "autoF5Indicator";
     indicator.style.cssText = `
@@ -82,7 +76,6 @@ class AutoF5Content {
       user-select: none;
     `;
 
-    // Thêm click handler để toggle visibility
     indicator.addEventListener("click", () => {
       indicator.style.opacity = indicator.style.opacity === "0.3" ? "1" : "0.3";
     });
@@ -96,8 +89,6 @@ class AutoF5Content {
 
     if (isRunning) {
       indicator.style.display = "block";
-
-      // Thay đổi màu khi gần hết thời gian
       if (timeLeft <= 5) {
         indicator.style.background =
           "linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)";
@@ -107,8 +98,6 @@ class AutoF5Content {
           "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
         indicator.style.animation = "none";
       }
-
-      // Hiệu ứng flash khi refresh
       if (timeLeft === 0) {
         indicator.innerHTML = "🔄 Refreshing...";
         indicator.style.background =
@@ -120,16 +109,17 @@ class AutoF5Content {
   }
 
   handlePageRefresh() {
-    // Hiển thị thông báo trước khi refresh
+    if (this.statusChecker) {
+      clearInterval(this.statusChecker);
+      this.statusChecker = null;
+    }
     this.showRefreshNotification();
-
     setTimeout(() => {
       window.location.reload();
     }, 500);
   }
 
   showRefreshNotification() {
-    // Tạo notification toast
     const toast = document.createElement("div");
     toast.style.cssText = `
       position: fixed;
@@ -147,32 +137,15 @@ class AutoF5Content {
       text-align: center;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     `;
-
     document.body.appendChild(toast);
-
-    // Xóa toast sau 2 giây
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }
     }, 2000);
   }
-  updateIndicatorStats(refreshCount) {
-    const indicator = document.getElementById("autoF5Indicator");
-    if (!indicator) return;
-
-    // Hiển thị số lần F5 trong indicator
-    if (refreshCount > 0) {
-      const currentText = indicator.innerHTML;
-      if (currentText.includes("F5:")) {
-        // Thêm badge số lần F5
-        indicator.innerHTML = currentText.replace("🔄", `🔄(${refreshCount})`);
-      }
-    }
-  }
 
   createBottomRightPopup() {
-    // Tạo popup ở góc phải dưới màn hình
     const popup = document.createElement("div");
     popup.id = "autoF5BottomPopup";
     popup.style.cssText = `
@@ -202,42 +175,39 @@ class AutoF5Content {
         <span style="font-weight: bold; font-size: 14px;">✔️ Tự Động Check Passed FPT</span>
         <span id="popupCloseBtn" style="cursor: pointer; font-size: 16px; opacity: 0.7; transition: opacity 0.3s;">×</span>
       </div>
-      <div class="popup-content">        <div class="timer-section" style="text-align: center; margin-bottom: 10px;">
+      <div class="popup-content">
+        <div class="timer-section" style="text-align: center; margin-bottom: 10px;">
           <div id="popupTimer" style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">30</div>
           <div id="popupStatus" style="font-size: 11px; opacity: 0.8;">Click 'Bắt đầu' để check tự động</div>
-        </div><div class="stats-section" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+        </div>
+        <div class="stats-section" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span style="opacity: 0.8;">Số lần F5:</span>
             <span id="popupRefreshCount" style="font-weight: bold;">0</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span style="opacity: 0.8;">cook tool by max stewie</span>
-            
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
             <span style="opacity: 0.8;">Trạng thái:</span>
             <span id="popupPageStatus" style="font-weight: bold; font-size: 11px;">Đang kiểm tra...</span>
           </div>
           <div style="text-align: center; font-size: 10px; opacity: 0.6; font-style: italic; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
-            
           </div>
         </div>
       </div>
     `;
 
-    // Thêm event listeners
     const closeBtn = popup.querySelector("#popupCloseBtn");
     closeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.hideBottomRightPopup();
     });
 
-    // Click popup để toggle minimize
     popup.addEventListener("click", () => {
       this.togglePopupSize();
     });
 
-    // Hover effects
     closeBtn.addEventListener("mouseenter", () => {
       closeBtn.style.opacity = "1";
       closeBtn.style.transform = "scale(1.2)";
@@ -280,7 +250,6 @@ class AutoF5Content {
         statusEl.textContent = `⏰ Còn lại ${timeLeft} giây`;
       }
     } else {
-      // Giữ popup hiển thị nhưng thay đổi trạng thái
       statusEl.textContent = "⏸️ Đã dừng";
       popup.style.animation = "none";
       popup.style.background =
@@ -325,6 +294,7 @@ class AutoF5Content {
       popup.style.animation = "popupShrink 0.3s ease";
     }
   }
+
   formatTime(seconds) {
     if (seconds < 60) {
       return `${seconds}s`;
@@ -341,14 +311,11 @@ class AutoF5Content {
 
   playSuccessSound() {
     try {
-      // Tạo context âm thanh
       const audioContext = new (window.AudioContext ||
         window.webkitAudioContext)();
-
-      // Tạo chuỗi âm thanh thành công (3 tiếng beep ngắn)
-      const frequencies = [800, 1000, 1200]; // Tần số tăng dần
-      const duration = 0.2; // Độ dài mỗi tiếng beep
-      const gap = 0.1; // Khoảng cách giữa các tiếng beep
+      const frequencies = [800, 1000, 1200];
+      const duration = 0.2;
+      const gap = 0.1;
 
       frequencies.forEach((frequency, index) => {
         const oscillator = audioContext.createOscillator();
@@ -360,7 +327,6 @@ class AutoF5Content {
         oscillator.frequency.value = frequency;
         oscillator.type = "sine";
 
-        // Thiết lập volume và fade
         const startTime = audioContext.currentTime + index * (duration + gap);
         const endTime = startTime + duration;
 
@@ -375,13 +341,12 @@ class AutoF5Content {
       console.log("🔊 Đã phát âm thanh thông báo PASSED!");
     } catch (error) {
       console.error("Lỗi khi phát âm thanh:", error);
-      // Fallback: sử dụng beep đơn giản
       this.playFallbackSound();
     }
   }
+
   playFallbackSound() {
     try {
-      // Sử dụng Audio API đơn giản với data URL
       const audioContext = new (window.AudioContext ||
         window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -390,7 +355,7 @@ class AutoF5Content {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
 
-      oscillator.frequency.value = 1000; // 1kHz
+      oscillator.frequency.value = 1000;
       oscillator.type = "sine";
 
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
@@ -409,24 +374,16 @@ class AutoF5Content {
   playPassedSoundWithDuration(duration) {
     try {
       console.log("🔊 Bắt đầu phát âm thanh PASSED trong", duration, "giây");
-
-      // Tạo context âm thanh
       const audioContext = new (window.AudioContext ||
         window.webkitAudioContext)();
+      const frequencies = [800, 1000, 1200];
+      const beepDuration = 0.3;
+      const gap = 0.2;
+      const cycleTime = (beepDuration + gap) * frequencies.length;
+      const numberOfCycles = Math.ceil(duration / cycleTime);
 
-      // Âm thanh sẽ phát liên tục trong khoảng thời gian được chỉ định
-      const frequencies = [800, 1000, 1200]; // 3 tần số khác nhau
-      const beepDuration = 0.3; // Độ dài mỗi tiếng beep
-      const gap = 0.2; // Khoảng cách giữa các tiếng beep
-      const cycleTime = (beepDuration + gap) * frequencies.length; // Thời gian 1 chu kỳ
-
-      const numberOfCycles = Math.ceil(duration / cycleTime); // Số chu kỳ cần phát
-
-      // Phát âm thanh theo chu kỳ
       for (let cycle = 0; cycle < numberOfCycles; cycle++) {
         const cycleStartTime = cycle * cycleTime;
-
-        // Dừng nếu vượt quá thời gian yêu cầu
         if (cycleStartTime >= duration) break;
 
         frequencies.forEach((frequency, index) => {
@@ -435,8 +392,6 @@ class AutoF5Content {
             cycleStartTime +
             index * (beepDuration + gap);
           const endTime = startTime + beepDuration;
-
-          // Dừng nếu vượt quá thời gian yêu cầu
           if (startTime >= audioContext.currentTime + duration) return;
 
           const oscillator = audioContext.createOscillator();
@@ -448,7 +403,6 @@ class AutoF5Content {
           oscillator.frequency.value = frequency;
           oscillator.type = "sine";
 
-          // Thiết lập volume và fade
           gainNode.gain.setValueAtTime(0, startTime);
           gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.02);
           gainNode.gain.exponentialRampToValueAtTime(
@@ -463,19 +417,16 @@ class AutoF5Content {
         });
       }
 
-      // Hiển thị countdown âm thanh
       this.showSoundCountdown(duration);
 
       console.log(`🔊 Đã lập lịch phát âm thanh trong ${duration} giây`);
     } catch (error) {
       console.error("Lỗi khi phát âm thanh tùy chỉnh:", error);
-      // Fallback: phát âm thanh ngắn
       this.playSuccessSound();
     }
   }
 
   showSoundCountdown(duration) {
-    // Tạo element hiển thị countdown âm thanh
     const countdownElement = document.createElement("div");
     countdownElement.style.cssText = `
       position: fixed;
@@ -503,7 +454,6 @@ class AutoF5Content {
 
     document.body.appendChild(countdownElement);
 
-    // Cập nhật countdown mỗi giây
     const countdownInterval = setInterval(() => {
       timeLeft--;
       if (timeLeft <= 0) {
@@ -517,7 +467,6 @@ class AutoF5Content {
       }
     }, 1000);
 
-    // Tự động xóa sau thời gian duration + 1 giây
     setTimeout(() => {
       if (countdownElement.parentNode) {
         countdownElement.remove();
@@ -527,14 +476,12 @@ class AutoF5Content {
       }
     }, (duration + 1) * 1000);
   }
+
   async loadInitialStats() {
     try {
       const response = await chrome.runtime.sendMessage({ type: "getStatus" });
       if (response && response.refreshCount !== undefined) {
         this.updatePopupStats(response.refreshCount, response.totalTime);
-        this.updateIndicatorStats(response.refreshCount);
-
-        // Hiển thị popup nếu timer đang chạy
         if (response.isRunning) {
           this.updateBottomRightPopup(response.timeLeft, response.isRunning);
         }
@@ -545,37 +492,66 @@ class AutoF5Content {
   }
 
   startStatusChecking() {
-    // Kiểm tra trạng thái mỗi 2 giây
     this.statusChecker = setInterval(() => {
       this.checkPageStatus();
     }, 2000);
   }
-  checkPageStatus() {
-    // Tìm kiếm trạng thái "Passed" và "Not Passed" bằng JavaScript thuần
-    const passedElement = this.findStatusElement("Passed", "Green");
-    const notPassedElement = this.findStatusElement("Not Passed", "Red");
 
-    if (passedElement) {
-      console.log("🎉 Phát hiện trạng thái PASSED - Dừng check tự động!");
-      this.handlePassedStatus();
-    } else if (notPassedElement) {
-      console.log(
-        "❌ Phát hiện trạng thái NOT PASSED - Tiếp tục check tự động!"
-      );
-      this.handleNotPassedStatus();
+  isExtensionContextValid() {
+    return !!chrome.runtime?.id;
+  }
+
+  async checkPageStatus() {
+    try {
+      if (!this.isExtensionContextValid()) {
+        console.warn("Extension context invalidated - Bỏ qua check trạng thái");
+        if (this.statusChecker) {
+          clearInterval(this.statusChecker);
+          this.statusChecker = null;
+        }
+        return;
+      }
+
+      const response = await chrome.runtime.sendMessage({ type: "getStatus" });
+      if (!response || !response.isRunning) {
+        return;
+      }
+
+      const passedElement = this.findStatusElement("Passed", "Green");
+      const notPassedElement = this.findStatusElement("Not Passed", "Red");
+
+      if (passedElement) {
+        if (this.lastStatus !== "PASSED") {
+          this.handlePassedStatus();
+          this.lastStatus = "PASSED";
+        }
+      } else if (notPassedElement) {
+        if (this.lastStatus !== "NOT_PASSED") {
+          this.updatePopupStatus("❌ Not Passed - Đang F5...");
+          this.handleNotPassedStatus();
+          this.lastStatus = "NOT_PASSED";
+        }
+      } else {
+        this.lastStatus = null;
+      }
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra trạng thái trang:", error);
+      if (error.message.includes("context invalidated")) {
+        if (this.statusChecker) {
+          clearInterval(this.statusChecker);
+          this.statusChecker = null;
+        }
+      }
     }
   }
 
   findStatusElement(statusText, color) {
-    // Tìm kiếm chính xác theo cấu trúc HTML được cung cấp
     const rows = document.querySelectorAll("tr");
-
     for (const row of rows) {
       const cells = row.querySelectorAll("td");
       if (cells.length >= 2) {
         const firstCell = cells[0];
         const statusCell = cells[1];
-
         if (firstCell.textContent.trim() === "Status") {
           const font = statusCell.querySelector(`font[color="${color}"]`);
           if (font && font.textContent.trim() === statusText) {
@@ -586,22 +562,19 @@ class AutoF5Content {
     }
     return null;
   }
+
   async handlePassedStatus() {
     try {
-      // Gửi thông báo đến background về việc phát hiện PASSED
-      // Background sẽ xử lý việc dừng timer và phát âm thanh
+      if (!this.isExtensionContextValid()) {
+        console.warn("Context invalidated - Bỏ qua handlePassedStatus");
+        return;
+      }
       await chrome.runtime.sendMessage({ type: "passedDetected" });
-
-      // Hiển thị thông báo
       this.showStatusNotification(
         "🎉 PASSED! Check tự động đã dừng",
         "success"
       );
-
-      // Cập nhật popup
       this.updatePopupStatus("🎉 PASSED - Đã dừng!");
-
-      // Dừng kiểm tra trạng thái
       if (this.statusChecker) {
         clearInterval(this.statusChecker);
         this.statusChecker = null;
@@ -610,10 +583,19 @@ class AutoF5Content {
       console.error("Lỗi khi xử lý trạng thái Passed:", error);
     }
   }
+
   async handleNotPassedStatus() {
     try {
-      // Chỉ cập nhật trạng thái popup, KHÔNG hiển thị thông báo
-      this.updatePopupStatus("❌ Not Passed - Tiếp Tục Chạy");
+      if (!this.isExtensionContextValid()) {
+        console.warn("Context invalidated - Bỏ qua handleNotPassedStatus");
+        return;
+      }
+      await chrome.runtime.sendMessage({ type: "notPassedDetected" });
+      this.showStatusNotification(
+        "❌ NOT PASSED! Tiếp tục check...",
+        "warning"
+      );
+      this.updatePopupStatus("❌ Not Passed - Đang F5...");
     } catch (error) {
       console.error("Lỗi khi xử lý trạng thái Not Passed:", error);
     }
@@ -649,13 +631,13 @@ class AutoF5Content {
     toast.innerHTML = message;
     document.body.appendChild(toast);
 
-    // Xóa toast sau 5 giây
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }
     }, 5000);
   }
+
   updatePopupStatus(statusText) {
     const popup = document.getElementById("autoF5BottomPopup");
     if (!popup) return;
@@ -663,8 +645,6 @@ class AutoF5Content {
     const pageStatusEl = popup.querySelector("#popupPageStatus");
     if (pageStatusEl) {
       pageStatusEl.textContent = statusText;
-
-      // Thay đổi màu theo trạng thái
       if (statusText.includes("PASSED")) {
         pageStatusEl.style.color = "#4CAF50";
       } else if (statusText.includes("Not Passed")) {
@@ -676,13 +656,11 @@ class AutoF5Content {
   }
 
   isTargetURL() {
-    // Chỉ hoạt động trên trang FPT Grade
     const targetURL = "https://fap.fpt.edu.vn/Grade/StudentGrade.aspx";
     return window.location.href.startsWith(targetURL);
   }
 }
 
-// Thêm CSS cho animation pulse và popup
 const style = document.createElement("style");
 style.textContent = `
   @keyframes pulse {
@@ -699,7 +677,6 @@ style.textContent = `
       transform: scale(1);
     }
   }
-  
   @keyframes popupPulse {
     0% {
       transform: scale(1);
@@ -714,7 +691,6 @@ style.textContent = `
       box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     }
   }
-  
   @keyframes popupExpand {
     from {
       transform: scaleY(0.3);
@@ -725,7 +701,6 @@ style.textContent = `
       opacity: 1;
     }
   }
-  
   @keyframes popupShrink {
     from {
       transform: scaleY(1);
@@ -736,7 +711,6 @@ style.textContent = `
       opacity: 0;
     }
   }
-  
   #autoF5BottomPopup:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
@@ -744,5 +718,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Khởi tạo content script
 const autoF5Content = new AutoF5Content();
