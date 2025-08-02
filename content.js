@@ -216,11 +216,10 @@ class AutoF5Content {
         <span style="font-weight: bold; font-size: 14px;">✔️ Tự Động Check Passed FPT</span>
         <span id="popupCloseBtn" style="cursor: pointer; font-size: 16px; opacity: 0.7; transition: opacity 0.3s;">×</span>
       </div>
-      <div class="popup-content">
-        <div class="timer-section" style="text-align: center; margin-bottom: 10px;">
+      <div class="popup-content">        <div class="timer-section" style="text-align: center; margin-bottom: 10px;">
           <div id="popupTimer" style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">30</div>
-          <div id="popupStatus" style="font-size: 11px; opacity: 0.8;">Chưa bắt đầu</div>
-        </div>        <div class="stats-section" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
+          <div id="popupStatus" style="font-size: 11px; opacity: 0.8;">Click 'Bắt đầu' để check tự động</div>
+        </div><div class="stats-section" style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;">
           <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
             <span style="opacity: 0.8;">Số lần F5:</span>
             <span id="popupRefreshCount" style="font-weight: bold;">0</span>
@@ -625,23 +624,16 @@ class AutoF5Content {
       console.error("Lỗi khi xử lý trạng thái Passed:", error);
     }
   }
-
   async handleNotPassedStatus() {
     try {
-      // Kiểm tra nếu timer chưa chạy thì bắt đầu
-      const response = await chrome.runtime.sendMessage({ type: "getStatus" });
-
-      if (!response.isRunning) {
-        console.log("Timer chưa chạy, bắt đầu check tự động...");
-        await chrome.runtime.sendMessage({ type: "startTimer" });
-        this.showStatusNotification(
-          "❌ Not Passed - Bắt đầu check tự động",
-          "warning"
-        );
-      }
+      // Chỉ hiển thị thông báo, KHÔNG tự động bắt đầu timer
+      this.showStatusNotification(
+        "❌ Not Passed - Hãy click 'Bắt đầu' để check tự động",
+        "warning"
+      );
 
       // Cập nhật popup
-      this.updatePopupStatus("❌ Not Passed - Đang F5...");
+      this.updatePopupStatus("❌ Not Passed - Chờ người dùng bắt đầu");
     } catch (error) {
       console.error("Lỗi khi xử lý trạng thái Not Passed:", error);
     }
