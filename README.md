@@ -1,6 +1,9 @@
 # Tự Động Check Passed FPT Chrome Extension - FPT Grade Checker
 
 Extension Chrome chuyên dụng để tự động kiểm tra trạng thái "Passed" trên trang điểm FPT Education.
+<img width="1920" height="920" alt="1l" src="https://github.com/user-attachments/assets/31857811-2890-41ad-8289-0608924c5f23" />
+
+![my-11134231-7rase-mcxnagyb2jt1e7](https://github.com/user-attachments/assets/edd00a0a-5a54-46c2-8e2f-c68bcde94be7)
 
 ## 🎯 **Mục đích sử dụng**
 
@@ -173,3 +176,4 @@ Nếu gặp vấn đề, hãy tạo issue trên GitHub hoặc liên hệ trực 
 ---
 
 ⭐ **Đừng quên star nếu thấy hữu ích!** ⭐
+
