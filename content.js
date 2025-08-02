@@ -132,7 +132,7 @@ class AutoF5Content {
     document.body.appendChild(popup);
   }
 
-  // Hàm reset popup về trạng thái ban đầu
+  // Hàm reset popup về trạng thái ban đầu (chỉ gọi khi !isRunning)
   resetPopupToInitial() {
     const popup = document.getElementById("autoF5BottomPopup");
     if (!popup) return;
@@ -142,7 +142,10 @@ class AutoF5Content {
     const pageStatusEl = popup.querySelector("#popupPageStatus");
     if (timerEl) timerEl.textContent = "30";
     if (statusEl) statusEl.textContent = "Click 'Bắt đầu' để check tự động";
-    if (pageStatusEl) pageStatusEl.textContent = "Chưa bắt đầu";
+    if (pageStatusEl) {
+      pageStatusEl.textContent = "Chưa bắt đầu";
+      pageStatusEl.style.color = "#fff"; // Màu mặc định
+    }
     popup.style.background =
       "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
     popup.style.animation = "none";
@@ -176,6 +179,9 @@ class AutoF5Content {
       } else {
         statusEl.textContent = `⏰ Còn lại ${timeLeft} giây`;
       }
+
+      // Fix: Update trạng thái khi đang chạy
+      this.updatePopupStatus("Đang check tự động");
     } else {
       this.resetPopupToInitial();
     }
@@ -444,6 +450,8 @@ class AutoF5Content {
         }
       } else {
         this.lastStatus = null;
+        // Fix: Update trạng thái khi đang chạy nhưng chưa passed
+        this.updatePopupStatus("Đang check tự động");
       }
     } catch (error) {
       console.error("Lỗi khi kiểm tra trạng thái trang:", error);
@@ -539,12 +547,13 @@ class AutoF5Content {
     const pageStatusEl = popup.querySelector("#popupPageStatus");
     if (pageStatusEl) {
       pageStatusEl.textContent = statusText;
+      // Fix: Thêm màu sắc cho trạng thái
       if (statusText.includes("PASSED")) {
-        pageStatusEl.style.color = "#4CAF50";
-      } else if (statusText.includes("Not Passed")) {
-        pageStatusEl.style.color = "#fff";
+        pageStatusEl.style.color = "#4CAF50"; // Xanh cho passed
+      } else if (statusText.includes("Đang check")) {
+        pageStatusEl.style.color = "#FFD700"; // Vàng cho đang chạy
       } else {
-        pageStatusEl.style.color = "#fff";
+        pageStatusEl.style.color = "#fff"; // Trắng mặc định
       }
     }
   }
