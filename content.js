@@ -54,10 +54,13 @@ class AutoF5Content {
       case "pageRefresh":
         this.handlePageRefresh();
         break;
-
       case "refreshHappened":
         this.updateIndicatorStats(message.refreshCount);
         this.updatePopupStats(message.refreshCount, message.totalTime);
+        break;
+
+      case "playPassedSound":
+        this.playPassedSoundWithDuration(message.duration);
         break;
 
       default:
@@ -337,7 +340,6 @@ class AutoF5Content {
       popup.style.animation = "popupShrink 0.3s ease";
     }
   }
-
   formatTime(seconds) {
     if (seconds < 60) {
       return `${seconds}s`;
@@ -350,6 +352,195 @@ class AutoF5Content {
       const minutes = Math.floor((seconds % 3600) / 60);
       return `${hours}h ${minutes}m`;
     }
+  }
+
+  playSuccessSound() {
+    try {
+      // Tạo context âm thanh
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+
+      // Tạo chuỗi âm thanh thành công (3 tiếng beep ngắn)
+      const frequencies = [800, 1000, 1200]; // Tần số tăng dần
+      const duration = 0.2; // Độ dài mỗi tiếng beep
+      const gap = 0.1; // Khoảng cách giữa các tiếng beep
+
+      frequencies.forEach((frequency, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = "sine";
+
+        // Thiết lập volume và fade
+        const startTime = audioContext.currentTime + index * (duration + gap);
+        const endTime = startTime + duration;
+
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, endTime);
+
+        oscillator.start(startTime);
+        oscillator.stop(endTime);
+      });
+
+      console.log("🔊 Đã phát âm thanh thông báo PASSED!");
+    } catch (error) {
+      console.error("Lỗi khi phát âm thanh:", error);
+      // Fallback: sử dụng beep đơn giản
+      this.playFallbackSound();
+    }
+  }
+  playFallbackSound() {
+    try {
+      // Sử dụng Audio API đơn giản với data URL
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 1000; // 1kHz
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.01,
+        audioContext.currentTime + 0.5
+      );
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.error("Lỗi fallback âm thanh:", error);
+    }
+  }
+
+  playPassedSoundWithDuration(duration) {
+    try {
+      console.log("🔊 Bắt đầu phát âm thanh PASSED trong", duration, "giây");
+
+      // Tạo context âm thanh
+      const audioContext = new (window.AudioContext ||
+        window.webkitAudioContext)();
+
+      // Âm thanh sẽ phát liên tục trong khoảng thời gian được chỉ định
+      const frequencies = [800, 1000, 1200]; // 3 tần số khác nhau
+      const beepDuration = 0.3; // Độ dài mỗi tiếng beep
+      const gap = 0.2; // Khoảng cách giữa các tiếng beep
+      const cycleTime = (beepDuration + gap) * frequencies.length; // Thời gian 1 chu kỳ
+
+      const numberOfCycles = Math.ceil(duration / cycleTime); // Số chu kỳ cần phát
+
+      // Phát âm thanh theo chu kỳ
+      for (let cycle = 0; cycle < numberOfCycles; cycle++) {
+        const cycleStartTime = cycle * cycleTime;
+
+        // Dừng nếu vượt quá thời gian yêu cầu
+        if (cycleStartTime >= duration) break;
+
+        frequencies.forEach((frequency, index) => {
+          const startTime =
+            audioContext.currentTime +
+            cycleStartTime +
+            index * (beepDuration + gap);
+          const endTime = startTime + beepDuration;
+
+          // Dừng nếu vượt quá thời gian yêu cầu
+          if (startTime >= audioContext.currentTime + duration) return;
+
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+
+          oscillator.frequency.value = frequency;
+          oscillator.type = "sine";
+
+          // Thiết lập volume và fade
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(0.25, startTime + 0.02);
+          gainNode.gain.exponentialRampToValueAtTime(
+            0.01,
+            Math.min(endTime, audioContext.currentTime + duration)
+          );
+
+          oscillator.start(startTime);
+          oscillator.stop(
+            Math.min(endTime, audioContext.currentTime + duration)
+          );
+        });
+      }
+
+      // Hiển thị countdown âm thanh
+      this.showSoundCountdown(duration);
+
+      console.log(`🔊 Đã lập lịch phát âm thanh trong ${duration} giây`);
+    } catch (error) {
+      console.error("Lỗi khi phát âm thanh tùy chỉnh:", error);
+      // Fallback: phát âm thanh ngắn
+      this.playSuccessSound();
+    }
+  }
+
+  showSoundCountdown(duration) {
+    // Tạo element hiển thị countdown âm thanh
+    const countdownElement = document.createElement("div");
+    countdownElement.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.95);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      z-index: 10001;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      border: 2px solid #4CAF50;
+      text-align: center;
+      font-family: 'Arial', sans-serif;
+    `;
+
+    let timeLeft = duration;
+    countdownElement.innerHTML = `
+      🎉 PASSED! 🎉<br>
+      🔊 Âm thanh: ${timeLeft}s
+    `;
+
+    document.body.appendChild(countdownElement);
+
+    // Cập nhật countdown mỗi giây
+    const countdownInterval = setInterval(() => {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        countdownElement.remove();
+      } else {
+        countdownElement.innerHTML = `
+          🎉 PASSED! 🎉<br>
+          🔊 Âm thanh: ${timeLeft}s
+        `;
+      }
+    }, 1000);
+
+    // Tự động xóa sau thời gian duration + 1 giây
+    setTimeout(() => {
+      if (countdownElement.parentNode) {
+        countdownElement.remove();
+      }
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+    }, (duration + 1) * 1000);
   }
   async loadInitialStats() {
     try {
@@ -410,11 +601,11 @@ class AutoF5Content {
     }
     return null;
   }
-
   async handlePassedStatus() {
     try {
-      // Dừng timer
-      await chrome.runtime.sendMessage({ type: "stopTimer" });
+      // Gửi thông báo đến background về việc phát hiện PASSED
+      // Background sẽ xử lý việc dừng timer và phát âm thanh
+      await chrome.runtime.sendMessage({ type: "passedDetected" });
 
       // Hiển thị thông báo
       this.showStatusNotification(
